@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HomeCare - Đồ gia dụng cho tổ ấm</title>
+  <link rel="stylesheet" href="/site.css">
+  <link rel="stylesheet" href="/home.css">
+</head>
+<body>
+  <header class="simple-header">
+    <a class="logo" href="/">HomeCare</a>
+    <form class="home-search" action="/shop.html" role="search">
+      <input type="search" name="q" placeholder="Tìm sản phẩm..." aria-label="Tìm sản phẩm">
+      <button type="submit">Tìm</button>
+    </form>
+    <nav aria-label="Điều hướng chính">
+      <a href="/">Trang chủ</a>
+      <a href="/khuyen-mai.html">Khuyến mãi</a>
+      <a href="/shop.html">Cửa hàng</a>
+      <a href="/shop.html#nav">🛒 Giỏ hàng</a>
+    </nav>
+  </header>
+
+  <main class="home-main">
+    <section class="home-intro">
+      <div>
+        <p class="mut">ĐỒ DÙNG THIẾT THỰC CHO MỌI GIA ĐÌNH</p>
+        <h1>Chăm chút cho tổ ấm của bạn</h1>
+        <p>Khám phá đồ gia dụng chất lượng với giá hợp lý, giao hàng tận nhà.</p>
+        <a class="btn p" href="/shop.html">Xem sản phẩm</a>
+      </div>
+      <div class="intro-symbol" aria-hidden="true">⌂</div>
+    </section>
+
+    <section class="home-section" id="categories">
+      <div class="section-title"><h2>Mua sắm theo danh mục</h2><a href="/shop.html">Tất cả danh mục →</a></div>
+      <div class="category-grid" id="category-list"><p class="mut">Đang tải danh mục...</p></div>
+    </section>
+
+    <section class="home-section" id="featured">
+      <div class="section-title"><h2>Sản phẩm nổi bật</h2><a href="/shop.html">Xem tất cả →</a></div>
+      <div class="product-grid" id="featured-products"><p class="mut">Đang tải sản phẩm...</p></div>
+    </section>
+
+    <section class="home-benefits">
+      <h2>Mua sắm đơn giản, an tâm</h2>
+      <div><p>🚚 Giao hàng toàn quốc</p><p>✓ Sản phẩm được chọn lọc</p><p>↩ Hỗ trợ đổi trả</p></div>
+    </section>
+  </main>
+
+  <footer class="home-footer">
+    <a class="logo" href="/">HomeCare</a>
+    <span>Đồ gia dụng cho tổ ấm của bạn</span>
+    <span>Hotline 1900 0000</span>
+  </footer>
+
+  <script>
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[char]);
+    const money = value => Number(value).toLocaleString('vi-VN') + '₫';
+    const categoryIcon = name => /bếp|điện/i.test(name) ? '🍳'
+      : /ngủ/i.test(name) ? '🛏️'
+      : /tắm/i.test(name) ? '🛁'
+      : /dọn|vệ sinh/i.test(name) ? '🧹'
+      : '🏠';
+    const imageFor = product => product.image?.startsWith('/')
+      ? `<img src="${esc(product.image)}" alt="${esc(product.name)}" loading="lazy">`
+      : `<span class="product-placeholder" aria-hidden="true">${esc(product.image || ['🍳', '🍽️', '🏠', '🧹'][categoryIndex % 4])}</span>`;
+
+    async function loadHome() {
+      const categoriesElement = document.getElementById('category-list');
+      const productsElement = document.getElementById('featured-products');
+      try {
+        const [categoryResponse, productResponse] = await Promise.all([
+          fetch('/api/categories'),
+          fetch('/api/products')
+        ]);
+        if (!categoryResponse.ok || !productResponse.ok) throw new Error('Không tải được cửa hàng.');
+        const [categories, products] = await Promise.all([categoryResponse.json(), productResponse.json()]);
+
+        categoriesElement.innerHTML = categories.slice(0, 6).map(category => `
+          <a class="category-card" href="/shop.html?category=${encodeURIComponent(category.id)}">
+            <span aria-hidden="true">${categoryIcon(category.name)}</span>
+            <strong>${esc(category.name)}</strong>
+            <small>${esc(category.description || 'Xem sản phẩm')}</small>
+          </a>`).join('') || '<p class="mut">Chưa có danh mục.</p>';
+
+        productsElement.innerHTML = products.slice(0, 8).map(product => `
+          <article class="product-card">
+            <a class="product-image" href="/shop.html">${imageFor(product)} </a>
+            <div class="product-card-body">
+              <a class="product-name" href="/shop.html">${esc(product.name)}</a>
+              <p class="product-description">${esc(product.description || 'Sản phẩm gia dụng thiết thực cho gia đình.')}</p>
+              <strong class="price">${money(product.price)}</strong>
+            </div>
+          </article>`).join('') || '<p class="mut">Chưa có sản phẩm.</p>';
+      } catch (error) {
+        categoriesElement.innerHTML = '<p class="mut">Không tải được danh mục. Vui lòng thử lại.</p>';
+        productsElement.innerHTML = '<p class="mut">Không tải được sản phẩm. Vui lòng thử lại.</p>';
+      }
+    }
+    loadHome();
+  </script>
+</body>
+</html>
